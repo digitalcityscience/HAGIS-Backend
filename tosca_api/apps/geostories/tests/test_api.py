@@ -206,6 +206,7 @@ def test_geostory_list_payload_fields(api_client, user, geostory):
     assert "id" in story_data
     assert "title" in story_data
     assert "summary" in story_data
+    assert "about_author" in story_data
     assert "hero_image_url" in story_data
     assert "hero_image_alt" in story_data
     assert "campaign" in story_data
@@ -532,6 +533,7 @@ def test_geostory_detail_full_payload(api_client, user, geostory):
     assert "id" in data
     assert "title" in data
     assert "summary" in data
+    assert "about_author" in data
     assert "status" in data
     assert "campaign" in data
     assert "content" in data
@@ -553,6 +555,7 @@ def test_geostory_create(api_client, user, campaign):
     data = {
         "title": "New Story",
         "summary": "A test story",
+        "about_author": "A short biography of the story author.",
         "status": "draft",
         "campaign": str(campaign.id),
     }
@@ -560,6 +563,7 @@ def test_geostory_create(api_client, user, campaign):
     assert response.status_code == 201
     assert response.data["title"] == "New Story"
     assert response.data["author"] == user.id
+    assert response.data["about_author"] == "A short biography of the story author."
 
 
 @pytest.mark.django_db
@@ -580,10 +584,13 @@ def test_geostory_update(api_client, user, geostory):
     _authenticate_org_writer(api_client, user, "ROLE_DCS_WRITER")
     response = api_client.patch(
         f"/api/v1/stories/{geostory.id}/",
-        {"title": "Updated Title"},
+        {"title": "Updated Title", "about_author": "Updated author biography."},
     )
     assert response.status_code == 200
     assert response.data["title"] == "Updated Title"
+    assert response.data["about_author"] == "Updated author biography."
+    geostory.refresh_from_db()
+    assert geostory.about_author == "Updated author biography."
 
 
 @pytest.mark.django_db

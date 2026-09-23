@@ -82,6 +82,7 @@ class GeoStory(TimeStampedModel):
         id: UUID primary key
         title: Headline of the story (sanitized)
         summary: Brief intro/description (sanitized)
+        about_author: Short biography for the author section (sanitized)
         status: Draft/Published/Archived
         campaign: The parent campaign this story belongs to
         author: The creator/owner
@@ -99,6 +100,16 @@ class GeoStory(TimeStampedModel):
     objects = GeoStoryQuerySet.as_manager()
     title = models.CharField(max_length=255)
     summary = models.TextField(blank=True, default="")
+    about_author = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="About the Author/Transparency (Public)",
+        help_text=(
+            "Here you can provide information about yourself and your perspective "
+            "(e.g. your occupation, where you live, and the narrative background "
+            "or paradigm of your Geostory)."
+        ),
+    )
     content = models.JSONField(
         default=empty_document,
         blank=True,
@@ -185,6 +196,7 @@ class GeoStory(TimeStampedModel):
         """Override save to enforce Zero Trust sanitization."""
         self.title = sanitize_simple(self.title)
         self.summary = sanitize_simple(self.summary)
+        self.about_author = sanitize_simple(self.about_author)
         self.hero_image_alt = sanitize_simple(self.hero_image_alt)
         self.content = validate_and_normalize(self.content)
 
