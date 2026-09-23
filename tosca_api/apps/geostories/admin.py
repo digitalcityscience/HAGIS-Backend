@@ -39,13 +39,14 @@ class GeoStoryAdmin(OrgScopedAdminMixin, admin.ModelAdmin):
 
     list_display = ("title", "hero_image_thumbnail", "status", "campaign", "author", "created_at")
     list_filter = ("status", "created_at", "campaign")
-    search_fields = ("title", "summary")
+    search_fields = ("title", "summary", "about_author")
     form = GeoStoryAdminForm
     autocomplete_fields = ["campaign", "author"]
     inlines = [GeoStoryLayerInline]
     readonly_fields = ("hero_image_preview",)
     fieldsets = (
         (None, {"fields": ("title", "summary", "status", "campaign", "author")}),
+        ("About the author", {"fields": ("about_author",)}),
         ("Story", {"fields": ("content",)}),
         (
             "Hero image",
