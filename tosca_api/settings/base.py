@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     "formbuilder",
     # Local apps
     "tosca_api.apps.core",
+    "tosca_api.apps.footer",
     "tosca_api.apps.organizations",
     "tosca_api.apps.tosca_web",
     "tosca_api.apps.catalog_api.apps.CatalogApiConfig",
