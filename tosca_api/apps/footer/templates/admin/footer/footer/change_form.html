@@ -1,0 +1,9 @@
+{% extends "admin/change_form.html" %}
+
+{% block after_field_sets %}
+  <aside class="footer-editor-note" aria-label="Publishing workflow">
+    <strong>Changes remain private until you publish.</strong>
+    <span>Return to the footer list after saving and use the Publish button to update the app.</span>
+  </aside>
+  {{ block.super }}
+{% endblock %}

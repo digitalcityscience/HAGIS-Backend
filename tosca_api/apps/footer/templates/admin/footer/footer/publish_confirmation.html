@@ -1,0 +1,28 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <main class="footer-publish-confirmation">
+    <p>
+      This will make <strong>{{ original.name }}</strong> the only public footer.
+      {% if replaces %}It replaces <strong>{{ replaces.name }}</strong>.{% endif %}
+    </p>
+
+    <h2>Public document routes</h2>
+    {% if active_documents %}
+      <ul>
+        {% for document in active_documents %}
+          <li><code>/{{ document.slug }}</code> — {{ document.title }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No document routes will be published.</p>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <input type="submit" value="Publish footer" class="default">
+      <a href="{% url 'admin:footer_footer_changelist' %}" class="button cancel-link">Cancel</a>
+    </form>
+  </main>
+{% endblock %}

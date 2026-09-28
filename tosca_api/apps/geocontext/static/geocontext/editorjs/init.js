@@ -279,34 +279,36 @@
     }
 
     function mount(textarea) {
-        if (typeof EditorJS === "undefined") return;
+        if (
+            typeof EditorJS === "undefined"
+            || textarea.dataset.editorjsMounted === "true"
+            || textarea.name.includes("__prefix__")
+        ) return;
+        textarea.dataset.editorjsMounted = "true";
 
         const profile = textarea.dataset.editorjsProfile || "full";
         const isDescription = profile === "description";
+        const isFooter = profile === "footer";
         const form = textarea.closest("form");
 
         const holder = document.createElement("div");
         holder.className = "geocontext-editorjs-holder";
+        holder.classList.add("geocontext-editorjs-holder--" + profile);
         textarea.parentNode.insertBefore(holder, textarea);
         textarea.classList.add("geocontext-editorjs-textarea-hidden");
 
         const tools = {};
         if (typeof Header !== "undefined") {
+            const headingLevels = isDescription
+                ? [2, 3, 4]
+                : isFooter
+                    ? [1, 2, 3]
+                    : [1, 2, 3, 4];
             tools.header = {
                 class: Header,
                 config: {
-                    levels: isDescription ? [2, 3, 4] : [1, 2, 3, 4],
+                    levels: headingLevels,
                     defaultLevel: 2,
-                    toolbox: (isDescription ? [
-                        { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4v16M20 4v16M4 12h16"/></svg>', title: "Heading 2", data: { level: 2 } },
-                        { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16M20 4v16M4 12h16"/></svg>', title: "Heading 3", data: { level: 3 } },
-                        { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4v16M20 4v16M4 12h16"/></svg>', title: "Heading 4", data: { level: 4 } },
-                    ] : [
-                        { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4v16M20 4v16M4 12h16"/></svg>', title: "Heading 1", data: { level: 1 } },
-                        { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4v16M20 4v16M4 12h16"/></svg>', title: "Heading 2", data: { level: 2 } },
-                        { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16M20 4v16M4 12h16"/></svg>', title: "Heading 3", data: { level: 3 } },
-                        { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4v16M20 4v16M4 12h16"/></svg>', title: "Heading 4", data: { level: 4 } },
-                    ]),
                 },
             };
         }
@@ -449,10 +451,17 @@
         if (form) registeredField = registerFormEditor(form, editor, textarea);
     }
 
-    function init() {
-        const targets = document.querySelectorAll("textarea[data-editorjs-target]");
+    function init(root) {
+        const scope = root && typeof root.querySelectorAll === "function"
+            ? root
+            : document;
+        const targets = scope.querySelectorAll("textarea[data-editorjs-target]");
         targets.forEach(mount);
     }
+
+    document.addEventListener("formset:added", function (event) {
+        init(event.target);
+    });
 
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", init);
