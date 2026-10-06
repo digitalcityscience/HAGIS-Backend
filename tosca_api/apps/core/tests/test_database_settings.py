@@ -4,17 +4,20 @@ Regression tests for issue 25: DB connection pooling and statement timeout.
 from django.db import OperationalError, connection
 from django.test import SimpleTestCase
 
+from tosca_api.settings import base
+
 
 class ConnMaxAgeSettingsTests(SimpleTestCase):
+    # Test settings replace DATABASES; inspect the shared production config.
     def test_conn_max_age_is_configured(self):
-        settings_dict = connection.settings_dict
+        settings_dict = base.DATABASES["default"]
         self.assertGreater(settings_dict['CONN_MAX_AGE'], 0)
 
     def test_conn_health_checks_enabled(self):
         # Paired with CONN_MAX_AGE: a reused connection is pinged before use
         # so a connection that died server-side surfaces as a clean retry
         # instead of a request-time error.
-        self.assertTrue(connection.settings_dict['CONN_HEALTH_CHECKS'])
+        self.assertTrue(base.DATABASES["default"]["CONN_HEALTH_CHECKS"])
 
 
 class StatementTimeoutTests(SimpleTestCase):
