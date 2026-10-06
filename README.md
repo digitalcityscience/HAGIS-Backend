@@ -296,31 +296,35 @@ make django-test-integration
 
 ## Production Notes
 
-The production stack is defined in `docker-compose-prod.yml`.
+The production stack and its Compose configuration live in
+`/opt/NGCN/tosca-deployment`. The `docker-compose-prod.yml` in this repository
+is retained for legacy/local transition use; it is not the production source
+of truth.
 
-Services:
+`.github/workflows/deploy.yml` runs on pushes to `main` and by manual dispatch
+from `main`.
+It checks the backend on a GitHub-hosted runner, then publishes the production
+Dockerfile as `ghcr.io/digitalcityscience/tosca-backend:<commit SHA>` and
+`ghcr.io/digitalcityscience/tosca-backend:main`. After the image is pushed, a
+self-hosted runner with `self-hosted`, `ngcn`, and `production` labels runs
+`/opt/NGCN/tosca-deployment/scripts/deploy-backend.sh <commit SHA>` locally.
+No inbound SSH or server SSH secrets are used.
 
-- `db`: PostgreSQL/PostGIS for Django.
-- `geoserver`: production GeoServer image.
-- `django`: Gunicorn-backed Django API.
-- `web`: SPA Nginx container. Set `WEB_IMAGE` to the built SPA image.
-- `nginx`: public reverse proxy for `/api/`, `/admin/`, `/accounts/`,
-  `/geoserver/`, `/media/`, `/static/`, and the SPA shell.
+GitHub Actions must be enabled and the workflow's `GITHUB_TOKEN` must have
+package write access. The internal runner needs Docker and Compose access, a
+GHCR login that can pull the package, the deployment repository at the path
+above, and executable deployment scripts. The deployment repository must use
+the published SHA image in its production Compose configuration.
 
-Start production:
-
-```bash
-cp .env.example .env.prod
-make set-env ENV=prod
-make up
-```
-
-In a real deployment, set `WEB_IMAGE` to an immutable image from the SPA
-pipeline:
-
-```dotenv
-WEB_IMAGE=registry.example.com/tosca-web:2026-05-21
-```
+The image installs locked production dependencies during `docker build`,
+including the `vendor/geoserver-rest` submodule. Startup does not sync Python
+dependencies unless `RUN_UV_SYNC_ON_STARTUP=true`. For the transition period,
+`RUN_MIGRATIONS_ON_STARTUP=true` and `RUN_COLLECTSTATIC_ON_STARTUP=true` keep
+the current startup behavior; each can be set to `false` when its deployment
+step is handled separately. `RUN_SETUP_DEFAULT_ENGINE` and
+`RUN_DEFAULT_GEODATA_PROVIDER_SYNC_ON_STARTUP` retain their existing defaults.
+The next deployment phase should move migrations into the deployment repo's
+`scripts/migrate.sh` and then set `RUN_MIGRATIONS_ON_STARTUP=false`.
 
 Required Django media/static settings for production:
 
