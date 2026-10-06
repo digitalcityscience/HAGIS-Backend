@@ -19,26 +19,32 @@ if [ ! -f pyproject.toml ]; then
   exit 1
 fi
 
-echo "🔄 Syncing production dependencies..."
-run_as_appuser uv sync --no-dev
+if [ "${RUN_UV_SYNC_ON_STARTUP:-false}" = "true" ]; then
+  echo "🔄 Syncing production dependencies..."
+  run_as_appuser uv sync --frozen --no-dev
+fi
 
 echo "🔒 Validating production settings..."
-run_as_appuser uv run python manage.py check --deploy
+run_as_appuser /venv/bin/python manage.py check --deploy
 
-echo "📦 Running database migrations..."
-run_as_appuser uv run python manage.py migrate --noinput
+if [ "${RUN_MIGRATIONS_ON_STARTUP:-true}" = "true" ]; then
+  echo "📦 Running database migrations..."
+  run_as_appuser /venv/bin/python manage.py migrate --noinput
+fi
 
-echo "🗂️ Collecting static files..."
-run_as_appuser uv run python manage.py collectstatic --noinput
+if [ "${RUN_COLLECTSTATIC_ON_STARTUP:-true}" = "true" ]; then
+  echo "🗂️ Collecting static files..."
+  run_as_appuser /venv/bin/python manage.py collectstatic --noinput
+fi
 
 if [ "${RUN_SETUP_DEFAULT_ENGINE:-true}" = "true" ]; then
   echo "🔧 Setting up default GeoServer engine..."
-  run_as_appuser uv run python manage.py setup_default_engine
+  run_as_appuser /venv/bin/python manage.py setup_default_engine
 fi
 
 if [ "${RUN_DEFAULT_GEODATA_PROVIDER_SYNC_ON_STARTUP:-true}" = "true" ]; then
   echo "🔄 Syncing the default GeoData provider..."
-  run_as_appuser uv run python manage.py sync_geoserver --default
+  run_as_appuser /venv/bin/python manage.py sync_geoserver --default
 fi
 
 echo "🚀 Starting Gunicorn..."
