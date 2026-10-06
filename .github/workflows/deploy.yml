@@ -1,95 +1,17 @@
-name: Build and deploy backend
+name: Trigger production deployment
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write
-
-concurrency:
-  group: production-backend
-  cancel-in-progress: false
 
 jobs:
-  build-and-push:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    services:
-      postgis:
-        image: postgis/postgis:16-3.4
-        env:
-          POSTGRES_DB: test_tosca
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d test_tosca"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      DJANGO_SETTINGS_MODULE: tosca_api.settings.test
-      DJANGO_STORAGE_BACKEND: filesystem
-      FIELD_ENCRYPTION_KEY: MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=
-      PG_HOST: localhost
-      PG_DATABASE: test_tosca
-      PG_API_USER: postgres
-      PG_API_PASSWORD: postgres
-      PG_DOCKER_PORT: "5432"
-      PG_SCHEMA_API: public
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-
-      - name: Install system libraries
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gdal-bin libgdal-dev libgeos-dev libproj-dev
-
-      - name: Install Python dependencies
-        run: |
-          uv python install 3.14
-          uv sync --frozen
-
-      - name: Check and test
-        run: |
-          uv run --no-sync ruff check --select E9,F63,F7,F82 .
-          uv run --no-sync python manage.py check
-          uv run --no-sync pytest -m 'not integration' --ds=tosca_api.settings.test
-
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push production image
-        env:
-          IMAGE_SHA: ${{ github.sha }}
-        run: |
-          docker buildx build \
-            --file docker/django/Dockerfile.prod \
-            --tag "ghcr.io/digitalcityscience/tosca-backend:$IMAGE_SHA" \
-            --tag ghcr.io/digitalcityscience/tosca-backend:main \
-            --push .
-
   deploy:
-    needs: build-and-push
     runs-on: [self-hosted, ngcn, production]
-    environment: production
     steps:
-      - name: Deploy published image locally
-        env:
-          DEPLOY_SHA: ${{ github.sha }}
+      - name: Deploy TOSCA
         run: |
-          cd /opt/NGCN/tosca-deployment
-          ./scripts/deploy-backend.sh "$DEPLOY_SHA"
+          cd "${TOSCA_DEPLOYMENT_DIR:-/opt/NGCN/TOSCA-Deployment}"
+          ./deploy.sh

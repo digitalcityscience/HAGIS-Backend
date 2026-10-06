@@ -27,7 +27,7 @@ fi
 echo "🔒 Validating production settings..."
 run_as_appuser /venv/bin/python manage.py check --deploy
 
-if [ "${RUN_MIGRATIONS_ON_STARTUP:-true}" = "true" ]; then
+if [ "${RUN_MIGRATIONS_ON_STARTUP:-false}" = "true" ]; then
   echo "📦 Running database migrations..."
   run_as_appuser /venv/bin/python manage.py migrate --noinput
 fi
