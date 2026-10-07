@@ -430,17 +430,8 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Swagger/OpenAPI documentation for TOSCA Django REST endpoints.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    # Add common error responses to all endpoints
-    "APPEND_COMPONENTS": {
-        "securitySchemes": {
-            "bearerAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT",
-            }
-        }
-    },
-    "SECURITY": [{"bearerAuth": []}],
+    # The bearerAuth security scheme comes from the KeycloakTokenAuthentication
+    # extension in tosca_api.apps.authentication.schema.
     # Postprocessing hooks to add common responses
     "POSTPROCESSING_HOOKS": [
         "tosca_api.apps.core.schema.add_common_responses",
