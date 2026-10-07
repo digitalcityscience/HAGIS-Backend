@@ -2,13 +2,37 @@
 set -eu
 
 garage() {
-  /garage -c "${GARAGE_CONFIG_FILE:-/etc/garage/garage.toml}" "$@"
+  /garage -c "$GARAGE_CONFIG_FILE" "$@"
 }
 
+: "${GARAGE_RPC_SECRET:?GARAGE_RPC_SECRET is required}"
+: "${GARAGE_ADMIN_TOKEN:?GARAGE_ADMIN_TOKEN is required}"
 : "${GARAGE_PRIVATE_BUCKET:?GARAGE_PRIVATE_BUCKET is required}"
 : "${GARAGE_PUBLIC_BUCKET:?GARAGE_PUBLIC_BUCKET is required}"
 : "${GARAGE_ARCHIVE_BUCKET:?GARAGE_ARCHIVE_BUCKET is required}"
 : "${GARAGE_ACCESS_KEY:?GARAGE_ACCESS_KEY is required}"
+
+GARAGE_CONFIG_FILE=${GARAGE_CONFIG_FILE:-/tmp/garage.toml}
+export GARAGE_CONFIG_FILE
+umask 077
+cat > "$GARAGE_CONFIG_FILE" <<EOF
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+db_engine = "sqlite"
+replication_factor = 1
+compression_level = 2
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "garage:3901"
+rpc_secret = "${GARAGE_RPC_SECRET}"
+
+[s3_api]
+s3_region = "${S3_REGION_NAME:-garage}"
+api_bind_addr = "[::]:3900"
+
+[admin]
+api_bind_addr = "[::]:3903"
+admin_token = "${GARAGE_ADMIN_TOKEN}"
+EOF
 
 printf '%s\n' 'Waiting for the Garage single-node layout...'
 i=0

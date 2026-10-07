@@ -58,26 +58,29 @@ services:
     restart: unless-stopped
 
   garage:
-    image: ${GARAGE_IMAGE:-dxflrs/garage:v2.3.0}
+    image: tosca-garage-dev:local
+    build:
+      context: ./docker/garage
+      dockerfile: Dockerfile.runtime
+      args:
+        GARAGE_IMAGE: ${GARAGE_IMAGE:-dxflrs/garage:v2.3.0}
     container_name: tosca-garage
     environment:
-      GARAGE_CONFIG_FILE: /etc/garage/garage.toml
       GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
       GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN:-local-garage-admin-token}
       GARAGE_DEFAULT_ACCESS_KEY: ${S3_ACCESS_KEY_ID:-GKtosca-local-django}
       GARAGE_DEFAULT_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:-tosca-local-django-secret-change-me}
       GARAGE_DEFAULT_BUCKET: ${S3_BUCKET_NAME:-tosca-media-private}
+      S3_REGION_NAME: ${S3_REGION_NAME:-garage}
     ports:
       - "${GARAGE_S3_PORT:-3900}:3900"
       - "${GARAGE_ADMIN_PORT:-3903}:3903"
     volumes:
       - garage_meta:/var/lib/garage/meta
       - garage_data:/var/lib/garage/data
-      - ./docker/garage/garage.toml:/etc/garage.toml:ro
-    entrypoint: ["/garage"]
-    command: ["-c", "/etc/garage.toml", "server", "--single-node", "--default-bucket"]
+    command: ["server", "--single-node", "--default-bucket"]
     healthcheck:
-      test: ["CMD", "/garage", "-c", "/etc/garage.toml", "status"]
+      test: ["CMD", "/garage", "-c", "/run/garage/garage.toml", "status"]
       interval: 5s
       timeout: 5s
       retries: 30
@@ -99,7 +102,6 @@ services:
       garage:
         condition: service_healthy
     environment:
-      GARAGE_CONFIG_FILE: /etc/garage/garage.toml
       GARAGE_PRIVATE_BUCKET: ${S3_BUCKET_NAME:-tosca-media-private}
       GARAGE_PUBLIC_BUCKET: ${S3_PUBLIC_BUCKET_NAME:-tosca-media-public}
       GARAGE_ARCHIVE_BUCKET: ${S3_ARCHIVE_BUCKET_NAME:-tosca-media-archive}
@@ -107,9 +109,9 @@ services:
       GARAGE_TEST_PUBLIC_BUCKET: ${S3_TEST_PUBLIC_BUCKET_NAME:-tosca-media-test-public}
       GARAGE_TEST_ARCHIVE_BUCKET: ${S3_TEST_ARCHIVE_BUCKET_NAME:-tosca-media-test-archive}
       GARAGE_ACCESS_KEY: ${S3_ACCESS_KEY_ID:-GKtosca-local-django}
-    volumes:
-      - garage_meta:/var/lib/garage/meta:ro
-      - ./docker/garage/garage.toml:/etc/garage/garage.toml:ro
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN:-local-garage-admin-token}
+      S3_REGION_NAME: ${S3_REGION_NAME:-garage}
     restart: "no"
 
   django:
